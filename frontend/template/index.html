@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Picture Password Authentication{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 70vh; padding: 2rem 1rem;">
+    <div class="hp-card">
+
+        <div class="hp-icon">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+
+        <h1 class="hp-title">Picture Password</h1>
+
+        <p class="hp-sub">
+            Authenticate by clicking memorable spots on images.<br>
+            No text passwords. Just visual memory.
+        </p>
+
+        <div class="hp-btns">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg w-100">
+                Get Started
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg w-100">
+                Sign In
+            </a>
+        </div>
+
+        <div class="hp-steps">
+            <span>Register</span>
+            <i class="fas fa-chevron-right"></i>
+            <span>Set picture password</span>
+            <i class="fas fa-chevron-right"></i>
+            <span>Click to log in</span>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+.hp-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 3rem 2.5rem;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+}
+.hp-icon {
+    width: 60px; height: 60px;
+    background: #ede9fe;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.5rem;
+    color: #4f46e5;
+}
+.hp-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.4px;
+    margin-bottom: 0.75rem;
+}
+.hp-sub {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+}
+.hp-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+}
+.hp-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+.hp-steps i {
+    font-size: 0.6rem;
+    color: #cbd5e1;
+}
+</style>
+{% endblock %}

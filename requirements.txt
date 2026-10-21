@@ -1,0 +1,21 @@
+# Picture Password Authentication System Requirements
+# Python Flask Application Dependencies
+
+Flask==2.3.3
+cryptography==41.0.4
+Werkzeug==2.3.7
+bcrypt==4.2.1
+flask-wtf==1.2.1
+pymysql==1.1.0
+
+# For creating sample images (optional)
+Pillow==10.4.0
+
+# Testing dependencies
+hypothesis==6.92.1
+pytest==7.4.3
+
+# Optional dependencies for enhanced functionality
+# Uncomment if needed for production deployment
+# gunicorn==21.2.0
+# python-dotenv==1.0.0

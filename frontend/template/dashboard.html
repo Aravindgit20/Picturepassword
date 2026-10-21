@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+
+        <!-- Welcome Header -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <h3 class="mb-0"><i class="fas fa-user-circle text-primary me-2"></i>Welcome, <strong>{{ username }}</strong></h3>
+                    <small class="text-muted"><i class="fas fa-clock me-1"></i>{{ now }}</small>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row mb-4 g-3">
+            <div class="col-md-3">
+                <div class="card text-center h-100 border-0 shadow-sm stat-card">
+                    <div class="card-body py-4">
+                        <div class="stat-icon bg-primary-soft mb-3">
+                            <i class="fas fa-user fa-2x text-primary"></i>
+                        </div>
+                        <h6 class="text-muted mb-1">Username</h6>
+                        <strong>{{ username }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center h-100 border-0 shadow-sm stat-card">
+                    <div class="card-body py-4">
+                        <div class="stat-icon bg-info-soft mb-3">
+                            <i class="fas fa-envelope fa-2x text-info"></i>
+                        </div>
+                        <h6 class="text-muted mb-1">Email</h6>
+                        <strong class="small">{{ user.email if user else 'N/A' }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center h-100 border-0 shadow-sm stat-card">
+                    <div class="card-body py-4">
+                        <div class="stat-icon bg-success-soft mb-3">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                        <h6 class="text-muted mb-1">Successful Logins</h6>
+                        <strong class="fs-4">{{ successful_logins }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center h-100 border-0 shadow-sm stat-card">
+                    <div class="card-body py-4">
+                        <div class="stat-icon bg-warning-soft mb-3">
+                            <i class="fas fa-calendar-alt fa-2x text-warning"></i>
+                        </div>
+                        <h6 class="text-muted mb-1">Registered</h6>
+                        <strong>{{ user.created_at[:10] if user and user.created_at else 'N/A' }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account & Actions -->
+        <div class="row mb-4 g-3">
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h6 class="mb-0"><i class="fas fa-id-card text-primary me-2"></i>Account Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tr>
+                                <td class="text-muted" width="40%"><i class="fas fa-toggle-on me-1"></i>Account Status</td>
+                                <td>
+                                    {% if user and user.is_active %}
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted"><i class="fas fa-image me-1"></i>Picture Password</td>
+                                <td>
+                                    {% if user and user.picture_password_data %}
+                                        <span class="badge bg-success"><i class="fas fa-lock me-1"></i>Set</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-exclamation me-1"></i>Not Set</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted"><i class="fas fa-shield-alt me-1"></i>Auth Method</td>
+                                <td><span class="badge bg-primary">Picture Password</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted"><i class="fas fa-history me-1"></i>Last Login</td>
+                                <td>
+                                    {% if last_login %}
+                                        <span class="text-dark">{{ last_login.attempt_time }}</span><br>
+                                        <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ last_login.ip_address or 'unknown IP' }}</small>
+                                    {% else %}
+                                        <span class="text-muted">First login</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h6 class="mb-0"><i class="fas fa-bolt text-warning me-2"></i>Quick Actions</h6>
+                    </div>
+                    <div class="card-body d-flex flex-column gap-3 justify-content-center">
+                        <a href="{{ url_for('auth.request_reset') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-key me-2"></i>Reset Picture Password
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login History -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-list-alt text-secondary me-2"></i>Recent Login History</h6>
+                <span class="badge bg-secondary">Last 10</span>
+            </div>
+            <div class="card-body p-0">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-clock me-1 text-muted"></i>Time</th>
+                                <th><i class="fas fa-info-circle me-1 text-muted"></i>Status</th>
+                                <th><i class="fas fa-network-wired me-1 text-muted"></i>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.attempt_time }}</td>
+                                <td>
+                                    {% if log.success %}
+                                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>Success</span>
+                                    {% else %}
+                                        <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Failed</span>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ log.ip_address or 'N/A' }}</code></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted p-3 mb-0"><i class="fas fa-inbox me-2"></i>No login history yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.stat-card { transition: transform 0.2s, box-shadow 0.2s; cursor: default; }
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.1) !important; }
+.stat-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+.bg-primary-soft { background: rgba(13,110,253,0.1); }
+.bg-info-soft    { background: rgba(13,202,240,0.1); }
+.bg-success-soft { background: rgba(25,135,84,0.1); }
+.bg-warning-soft { background: rgba(255,193,7,0.1); }
+</style>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Picture Password Authentication{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-10">
+<div class="card">
+<div class="card-header">
+<h3 class="text-center">Picture Password Authentication</h3>
+<div class="text-center">
+<span class="badge bg-info">Image <span id="currentImageNum">1</span> of 4</span>
+<span class="badge bg-warning">Time: <span id="timer">{{ time_limit }}</span>s</span>
+<span class="badge bg-danger">Attempts left: <span id="attemptsLeft">{{ max_attempts }}</span></span>
+</div>
+</div>
+<div class="card-body">
+
+                
+<!-- Current Image Display -->
+<div class="text-center mb-4" id="currentImageContainer">
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+<div class="card-header">
+<h5 id="imageTitle" class="mb-0">Click on the correct location in this image</h5>
+</div>
+<div class="image-container position-relative" style="line-height: 0;">
+<img id="currentImage" 
+src="{{ url_for('static', filename='images/' + auth_images[0]) }}" 
+class="clickable-auth-image" 
+data-image="{{ auth_images[0] }}"
+alt="Authentication Image"
+style="cursor: crosshair; width: 100%; height: 40vh; max-height: 420px; object-fit: cover; display: block;">
+</div>
+<div class="card-footer">
+<small class="text-muted">
+<i class="fas fa-mouse-pointer"></i> Click the same spot you selected during setup
+                                <span class="float-end">
+                                    <i class="fas fa-clock"></i> <span id="timerFooter">{{ time_limit }}</span> seconds remaining
+                                </span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Messages -->
+                <div id="statusMessage" class="text-center mb-3"></div>
+                
+                <!-- Progress Bar -->
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%" id="authProgress">
+                        <span id="progressText">0/4 completed</span>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="text-center">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Cancel & Restart</a>
+                    <button type="button" class="btn btn-outline-dark ms-2" id="fullscreenBtn" title="Toggle Fullscreen">
+                        <i class="fas fa-expand" id="fullscreenIcon"></i> Fullscreen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen overlay -->
+<div id="fullscreenOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#000; z-index:9999; cursor:crosshair; align-items:center; justify-content:center;">
+    <img id="fullscreenImage" src="" alt="Authentication Image"
+         style="max-width:100vw; max-height:100vh; object-fit:contain; pointer-events:none;">
+    <div style="position:absolute; top:16px; right:20px;">
+        <span class="badge bg-warning fs-6">Time: <span id="fsTimer">{{ time_limit }}</span>s</span>
+        <span class="badge bg-danger fs-6 ms-2">Attempts left: <span id="fsAttemptsLeft">{{ max_attempts }}</span></span>
+        <button class="btn btn-sm btn-light ms-2" id="exitFullscreenBtn"><i class="fas fa-compress"></i> Exit</button>
+    </div>
+    <div style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%);">
+        <span class="text-white" id="fsStatus"></span>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Authentication Successful!</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                    <p>Welcome! You have successfully authenticated using your picture password.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="goToDashboard">Go to Dashboard</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timeout Modal -->
+<div class="modal fade" id="timeoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-clock"></i> Time Up!</h5>
+            </div>
+            <div class="modal-body text-center bg-light">
+                <i class="fas fa-hourglass-end fa-3x text-primary mb-3"></i>
+                <div class="alert alert-primary"><strong>Authentication Timeout!</strong></div>
+                <p class="text-muted small">Redirecting to login page...</p>
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width: 100%">
+                        <span id="redirectCountdown">3</span> seconds
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lockout Modal -->
+<div class="modal fade" id="lockoutModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-ban"></i> Too Many Wrong Attempts!</h5>
+            </div>
+            <div class="modal-body text-center bg-light py-4">
+                <i class="fas fa-lock fa-4x text-danger mb-3"></i>
+                <div class="alert alert-danger">
+                    <strong>Authentication Failed!</strong><br>
+                    You have exceeded the maximum number of wrong attempts.
+                </div>
+                <p class="text-muted small">Your session has been terminated for security reasons.</p>
+                <p class="text-muted small">Redirecting to login in <strong id="lockoutCountdown">3</strong> seconds...</p>
+                <div class="progress mb-2">
+                    <div class="progress-bar bg-danger progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width: 100%" id="lockoutProgressBar">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentImageIndex = {{ current_image }};
+let timeLimit = {{ time_limit }};
+let maxAttempts = {{ max_attempts }};
+let timer = timeLimit;
+let timerInterval;
+let authImages = {{ auth_images | tojson }};
+let isFullscreen = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const currentImage = document.getElementById('currentImage');
+    const timerDisplay = document.getElementById('timer');
+    const timerFooter = document.getElementById('timerFooter');
+    const fsTimer = document.getElementById('fsTimer');
+    const currentImageNum = document.getElementById('currentImageNum');
+    const authProgress = document.getElementById('authProgress');
+    const progressText = document.getElementById('progressText');
+    const statusMessage = document.getElementById('statusMessage');
+    const attemptsLeft = document.getElementById('attemptsLeft');
+    const fsAttemptsLeft = document.getElementById('fsAttemptsLeft');
+
+    // Fullscreen overlay elements
+    const overlay = document.getElementById('fullscreenOverlay');
+    const fsImage = document.getElementById('fullscreenImage');
+    const fsStatus = document.getElementById('fsStatus');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+
+    function syncFullscreenImage() {
+        fsImage.src = currentImage.src;
+        fsImage.dataset.image = currentImage.dataset.image;
+    }
+
+    fullscreenBtn.addEventListener('click', function() {
+        syncFullscreenImage();
+        overlay.style.display = 'flex';
+        isFullscreen = true;
+    });
+
+    exitFullscreenBtn.addEventListener('click', function() {
+        overlay.style.display = 'none';
+        isFullscreen = false;
+    });
+
+    // Helper: get click coords relative to image (object-fit: cover, no padding)
+    function getImageContentRect(imgEl) {
+        const rect = imgEl.getBoundingClientRect();
+        return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    }
+
+    // Click on fullscreen overlay image
+    overlay.addEventListener('click', function(e) {
+        if (e.target === exitFullscreenBtn || exitFullscreenBtn.contains(e.target)) return;
+        const cr = getImageContentRect(fsImage);
+        if (e.clientX < cr.left || e.clientX > cr.left + cr.width ||
+            e.clientY < cr.top  || e.clientY > cr.top  + cr.height) return;
+        const x = Math.round(e.clientX - cr.left);
+        const y = Math.round(e.clientY - cr.top);
+        verifyClick(x, y, parseFloat((x / cr.width).toFixed(4)), parseFloat((y / cr.height).toFixed(4)), fsImage.dataset.image);
+    });
+
+    // Click on normal image
+    currentImage.addEventListener('click', function(e) {
+        const cr = getImageContentRect(currentImage);
+        if (e.clientX < cr.left || e.clientX > cr.left + cr.width ||
+            e.clientY < cr.top  || e.clientY > cr.top  + cr.height) return;
+        const x = Math.round(e.clientX - cr.left);
+        const y = Math.round(e.clientY - cr.top);
+        verifyClick(x, y, parseFloat((x / cr.width).toFixed(4)), parseFloat((y / cr.height).toFixed(4)), currentImage.dataset.image);
+    });
+
+    function updateTimerDisplays(val) {
+        if (timerDisplay) timerDisplay.textContent = val;
+        if (timerFooter) timerFooter.textContent = val;
+        if (fsTimer) fsTimer.textContent = val;
+    }
+
+    function updateAttemptsDisplays(val) {
+        if (attemptsLeft) attemptsLeft.textContent = val;
+        if (fsAttemptsLeft) fsAttemptsLeft.textContent = val;
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);   // always cancel any existing timer first
+        timer = timeLimit;
+        updateTimerDisplays(timer);
+        // Reset color for fresh start
+        if (timerDisplay) { timerDisplay.style.color = ''; timerDisplay.style.fontWeight = ''; }
+        if (fsTimer) { fsTimer.style.color = ''; }
+        timerInterval = setInterval(function() {
+            timer--;
+            updateTimerDisplays(timer);
+            if (timer <= 3) {
+                if (timerDisplay) { timerDisplay.style.color = 'red'; timerDisplay.style.fontWeight = 'bold'; }
+                if (fsTimer) { fsTimer.style.color = 'red'; }
+            }
+            if (timer <= 0) {
+                clearInterval(timerInterval);
+                handleTimeout();
+            }
+        }, 1000);
+    }
+
+    function verifyClick(x, y, x_pct, y_pct, imageName) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        fetch('{{ url_for("auth.verify_click") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({x: x, y: y, x_pct: x_pct, y_pct: y_pct, image: imageName})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (data.redirect) {
+                    overlay.style.display = 'none';
+                    showSuccessModal(data.redirect);
+                } else {
+                    currentImageIndex = data.next_image;
+                    updateProgress();
+                    loadNextImage();
+                    // Server resets wrong_attempts on a correct click, so reset
+                    // the attempts-left badge for the next image.
+                    updateAttemptsDisplays(maxAttempts);
+                    showStatusMessage('✓ Correct!', 'success');
+                    startTimer();
+                }
+            } else if (data.locked || data.expired) {
+                // Locked out (too many wrong clicks) OR server-side timer expired
+                overlay.style.display = 'none';
+                clearInterval(timerInterval);
+                if (data.locked) {
+                    showLockoutModal(data.redirect);
+                } else {
+                    const msg = 'Time limit exceeded. Redirecting to login...';
+                    showStatusMessage(msg, 'danger');
+                    setTimeout(() => { window.location.href = data.redirect; }, 2000);
+                }
+            } else {
+                updateAttemptsDisplays(data.remaining);
+                showStatusMessage(data.message, 'warning');
+                if (isFullscreen) fsStatus.textContent = data.message;
+                // Timer keeps counting down — do not restart it on a wrong click
+            }
+        })
+        .catch(() => { showStatusMessage('Error occurred.', 'danger'); startTimer(); });
+    }
+
+    function loadNextImage() {
+        if (currentImageIndex < authImages.length) {
+            const img = authImages[currentImageIndex];
+            const src = '{{ url_for("static", filename="images/") }}' + img;
+            currentImage.src = src;
+            currentImage.dataset.image = img;
+            currentImageNum.textContent = currentImageIndex + 1;
+            if (isFullscreen) { fsImage.src = src; fsImage.dataset.image = img; }
+        }
+    }
+
+    function updateProgress() {
+        const progress = (currentImageIndex / authImages.length) * 100;
+        authProgress.style.width = progress + '%';
+        progressText.textContent = currentImageIndex + '/' + authImages.length + ' completed';
+    }
+
+    function showStatusMessage(message, type) {
+        statusMessage.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
+        setTimeout(() => { statusMessage.innerHTML = ''; }, 3000);
+    }
+
+    function showSuccessModal(redirectUrl) {
+        const modal = new bootstrap.Modal(document.getElementById('successModal'));
+        modal.show();
+        document.getElementById('goToDashboard').addEventListener('click', function() {
+            window.location.href = redirectUrl;
+        });
+    }
+
+    function showLockoutModal(redirectUrl) {
+        const modal = new bootstrap.Modal(document.getElementById('lockoutModal'));
+        modal.show();
+        let countdown = 3;
+        const countdownEl = document.getElementById('lockoutCountdown');
+        const progressBar = document.getElementById('lockoutProgressBar');
+        const interval = setInterval(function() {
+            countdown--;
+            countdownEl.textContent = countdown;
+            progressBar.style.width = (countdown / 3 * 100) + '%';
+            if (countdown <= 0) {
+                clearInterval(interval);
+                window.location.href = redirectUrl;
+            }
+        }, 1000);
+    }
+
+    function handleTimeout() {
+        overlay.style.display = 'none';
+        const timeoutModal = new bootstrap.Modal(document.getElementById('timeoutModal'));
+        timeoutModal.show();
+        let countdown = 3;
+        const countdownEl = document.getElementById('redirectCountdown');
+        const countdownInterval = setInterval(function() {
+            countdown--;
+            countdownEl.textContent = countdown;
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                window.location.replace('{{ url_for("auth.timeout") }}');
+            }
+        }, 1000);
+    }
+
+    startTimer();
+});
+</script>
+
+<style>
+.image-container { position: relative; display: inline-block; }
+.clickable-auth-image:hover { opacity: 0.8; }
+#timer { font-weight: bold; font-size: 1.2em; }
+#fullscreenOverlay { display: none; }
+</style>
+{% endblock %}

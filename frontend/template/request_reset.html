@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Request Password Reset{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Request Picture Password Reset</h3>
+            </div>
+            <div class="card-body">
+                {% if submitted %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    Your reset request for <strong>{{ username }}</strong> has been submitted.
+                    An administrator will review it. Once approved, you can set up a new picture password.
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Submit a reset request. An admin will verify your identity and approve it.
+                    Once approved, you can set up a new picture password.
+                </div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('auth.request_reset') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason (optional)</label>
+                        <textarea class="form-control" id="reason" name="reason" rows="3"
+                                  placeholder="e.g. I forgot my picture password locations"></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning">Submit Reset Request</button>
+                    </div>
+                </form>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('auth.login') }}">Back to Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

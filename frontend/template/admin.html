@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if view == 'login' %}Admin Login
+{% elif view == 'user_details' %}User Details - {{ user.username }} - Admin
+{% else %}Admin Dashboard - Picture Password Authentication{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{# ───────────────────────── Admin Login view ───────────────────────── #}
+{% if view == 'login' %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <div class="card mt-5">
+            <div class="card-header bg-dark text-white text-center">
+                <h4 class="mb-0"><i class="fas fa-lock"></i> Admin Access</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.admin_login') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Admin Password</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Enter admin password" required autofocus>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-dark">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+                </form>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('main.index') }}" class="text-muted small">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─────────────────────── User Details view ────────────────────────── #}
+{% elif view == 'user_details' %}
+<div class="row">
+<div class="col-md-12">
+<div class="card">
+<div class="card-header bg-dark text-white">
+<h3 class="text-center mb-0">
+<i class="fas fa-user"></i> User Details: {{ user.username }}
+</h3>
+</div>
+<div class="card-body">
+                <!-- Back Button -->
+<div class="mb-3">
+<a href="{{ url_for('admin.admin') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Admin Dashboard
+                    </a>
+                </div>
+
+                <!-- User Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> User Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th width="40%">User ID</th>
+                                        <td>{{ user.id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Username</th>
+                                        <td>{{ user.username }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email</th>
+                                        <td>{{ user.email }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Created At</th>
+                                        <td>{{ user.created_at or 'N/A' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th width="40%">Account Status</th>
+                                        <td>
+                                            {% if user.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Picture Password</th>
+                                        <td>
+                                            {% if user.picture_password_data %}
+                                                <span class="badge bg-success">Set</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Not Set</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Login Attempts</th>
+                                        <td>{{ logs|length }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Successful Logins</th>
+                                        <td>
+                                            <span class="badge bg-success">
+                                                {{ logs|selectattr('success')|list|length }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cued Points Card -->
+                {% if cued_points %}
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Collected Cued Points (Picture Password)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for point in cued_points %}
+                            <div class="col-md-3 mb-3">
+                                <div class="card border-info text-center">
+                                    <div class="card-header bg-light">
+                                        <strong>Image {{ loop.index }}</strong>
+                                    </div>
+                                    <div class="card-body py-2 position-relative" style="background:#f8f9fa; min-height:120px;">
+                                        <img src="{{ url_for('static', filename='images/' + point.image) }}"
+                                             class="img-fluid rounded mb-2"
+                                             style="max-height:100px; object-fit:cover; width:100%;"
+                                             onerror="this.style.display='none'">
+                                        <div class="mt-1">
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-crosshairs"></i>
+                                                X: {{ point.x }}, Y: {{ point.y }}
+                                            </span>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">{{ point.image }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="alert alert-warning mt-2 mb-0 py-2">
+                            <i class="fas fa-lock"></i> <small>Coordinates are decrypted for admin review only. Tolerance: ±{{ click_tolerance }}px</small>
+                        </div>
+                    </div>
+                </div>
+                {% elif user.picture_password_data %}
+                <div class="card mb-4">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Cued Points</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Could not decrypt cued points (encryption key mismatch).</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Admin Actions Card -->
+<div class="card mb-4">
+<div class="card-header">
+<h5><i class="fas fa-tools"></i> Admin Actions</h5>
+</div>
+<div class="card-body">
+<div class="row">
+<div class="col-md-4 mb-3">
+<form method="POST" action="{{ url_for('admin.admin_reset_password', user_id=user.id) }}"
+onsubmit="return confirm('Reset picture password for {{ user.username }}? User will need to set up a new one.');">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button type="submit" class="btn btn-warning w-100">
+<i class="fas fa-redo"></i> Reset Picture Password
+</button>
+</form>
+</div>
+<div class="col-md-4 mb-3">
+<form method="POST" action="{{ url_for('admin.admin_toggle_status', user_id=user.id) }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button type="submit" class="btn btn-secondary w-100">
+<i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
+                                        {% if user.is_active %}Deactivate{% else %}Activate{% endif %} Account
+</button>
+</form>
+</div>
+<div class="col-md-4 mb-3">
+<form method="POST" action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}"
+onsubmit="return confirm('Are you sure you want to delete {{ user.username }}? This action cannot be undone! All user data and logs will be permanently deleted.');">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button type="submit" class="btn btn-danger w-100">
+<i class="fas fa-trash"></i> Delete User
+</button>
+</form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Authentication History Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Authentication History (Last 100 attempts)</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Status</th>
+                                        <th>IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td>{{ log.attempt_time }}</td>
+                                        <td>
+                                            {% if log.success %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i> Success
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times"></i> Failed
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ log.ip_address or 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                            <p>No authentication attempts recorded for this user.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─────────────────── Admin Dashboard view (default) ───────────────── #}
+{% else %}
+<div class="row">
+<div class="col-md-12">
+<div class="card">
+<div class="card-header bg-dark text-white">
+<div class="d-flex justify-content-between align-items-center">
+<h3 class="mb-0"><i class="fas fa-cogs"></i> Admin Dashboard</h3>
+<a href="{{ url_for('admin.admin_logout') }}" class="btn btn-outline-light btn-sm">
+<i class="fas fa-sign-out-alt"></i> Logout
+</a>
+</div>
+</div>
+<div class="card-body">
+<div class="row mb-4">
+<div class="col-md-4">
+<div class="card border-primary">
+<div class="card-body text-center">
+<i class="fas fa-users fa-2x text-primary mb-2"></i>
+<h4>{{ users|length }}</h4>
+<p>Total Users</p>
+</div>
+</div>
+</div>
+<div class="col-md-4">
+<div class="card border-success">
+<div class="card-body text-center">
+<i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+<h4>{{ logs|selectattr('success')|list|length }}</h4>
+<p>Successful Logins</p>
+</div>
+</div>
+</div>
+<div class="col-md-4">
+<div class="card border-danger">
+<div class="card-body text-center">
+<i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+<h4>{{ logs|rejectattr('success')|list|length }}</h4>
+<p>Failed Attempts</p>
+</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Reset Requests -->
+                {% if reset_requests %}
+                <div class="card mb-4 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-key"></i> Pending Password Reset Requests
+                            <span class="badge bg-dark ms-2">{{ reset_requests|length }}</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Reason</th>
+                                        <th>Requested At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in reset_requests %}
+                                    <tr>
+                                        <td><strong>{{ req.username }}</strong></td>
+                                        <td>{{ req.reason or '—' }}</td>
+                                        <td>{{ req.requested_at }}</td>
+                                        <td>
+                                            <form method="POST" action="{{ url_for('admin.approve_reset', request_id=req.id) }}"
+                                                  style="display:inline;"
+                                                  onsubmit="return confirm('Approve reset for {{ req.username }}?');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('admin.deny_reset', request_id=req.id) }}"
+                                                  style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-times"></i> Deny
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Users Management -->
+<div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-users"></i> Registered Users</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if users %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Picture Password</th>
+                                        <th>Registered</th>
+                                        <th>Status</th>
+                                        <th>Login Attempts</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr>
+                                        <td>{{ user.id }}</td>
+                                        <td><strong>{{ user.username }}</strong></td>
+                                        <td>{{ user.email }}</td>
+                                        <td>
+                                            {% if user.picture_password_data %}
+                                                <span class="badge bg-success">Set</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Not Set</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ user.created_at or 'N/A' }}</td>
+                                        <td>
+                                            {% if user.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set user_log_count = logs | selectattr('user_id', 'equalto', user.id) | list | length %}
+                                            {{ user_log_count }}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('admin.admin_user_details', user_id=user.id) }}"
+                                               class="btn btn-sm btn-outline-secondary mb-1">View Details</a>
+                                            <form method="POST" action="{{ url_for('admin.admin_reset_password', user_id=user.id) }}"
+                                                  style="display:inline;"
+                                                  onsubmit="return confirm('Reset picture password for {{ user.username }}?');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-warning mb-1">Reset Password</button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('admin.admin_toggle_status', user_id=user.id) }}"
+                                                  style="display:inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-dark mb-1">
+                                                    {% if user.is_active %}Deactivate{% else %}Activate{% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('admin.admin_delete_user', user_id=user.id) }}"
+                                                  style="display:inline;"
+                                                  onsubmit="return confirm('Delete {{ user.username }}? This cannot be undone.');">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger mb-1">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-user-slash fa-3x mb-3"></i>
+                            <p>No users registered yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Authentication Logs -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list-alt"></i> Recent Authentication Logs</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Username</th>
+                                        <th>Status</th>
+                                        <th>IP Address</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td>{{ log.attempt_time }}</td>
+                                        <td>{{ log.username }}</td>
+                                        <td>
+                                            {% if log.success %}
+                                                <span class="badge bg-success">Success</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ log.ip_address or 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                            <p>No authentication logs yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Admin Actions -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-tools"></i> Admin Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-database fa-2x text-info mb-2"></i>
+                                        <h6>Database Status</h6>
+                                        <p>MySQL database is operational</p>
+                                        <span class="badge bg-success">Connected</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <i class="fas fa-shield-alt fa-2x text-warning mb-2"></i>
+                                        <h6>Security Status</h6>
+                                        <p>Coordinate encryption active</p>
+                                        <span class="badge bg-success">Secure</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
